@@ -5,12 +5,11 @@ on:
 permissions: {}
 
 jobs:
-  dependency-review:
-    name: Dependency Review
+  spell-check:
+    name: Spell Check
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
     steps:
       - name: Harden Runner
         if: github.event.repository.private == false
@@ -25,9 +24,8 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Dependency Review
-        id: dependency_review
-        uses: actions/dependency-review-action@3c4e3dcb1aa7874d2c16be7d79418e9b7efd6261 # v4.8.2
+      - name: Spell Check
+        id: spell_check
+        uses: streetsidesoftware/cspell-action@e5a858a18b7e0b56e0342b1dcad796308b7341a2 # v8.1.1
         with:
-          comment-summary-in-pr: true
-          fail-on-severity: critical
+          treat_flagged_words_as_errors: true

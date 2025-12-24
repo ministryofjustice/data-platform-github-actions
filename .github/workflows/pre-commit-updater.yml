@@ -1,0 +1,118 @@
+---
+on:
+  workflow_call:
+
+permissions: {}
+
+jobs:
+  pre-commit-updater:
+    name: pre-commit Updater
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@20cf305ff2072d973412fa9b1e3a4f227bda3c76 # v2.14.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv
+        id: setup_uv
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+
+      - name: Update Pre-Commit
+        id: update_pre_commit
+        run: |
+          uvx pre-commit autoupdate --freeze
+
+      - name: Check for Changes
+        id: check_changes
+        run: |
+          if ! git diff --exit-code .pre-commit-config.yaml; then
+            echo "Changes detected in pre-commit configuration"
+            echo "changed=true" >>"${GITHUB_ENV}"
+          else
+            echo "No changes detected"
+            echo "changed=false" >>"${GITHUB_ENV}"
+          fi
+
+      - name: Create Branch
+        if: env.changed == 'true'
+        id: create_branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          branchName="pre-commit-update-$(date +%Y%m%d%H%M%S)"
+          export branchName
+          echo "branchName=${branchName}" >>"${GITHUB_ENV}"
+
+          gh api \
+            --method POST "/repos/${{ github.repository }}/git/refs" \
+            --raw-field ref="refs/heads/${branchName}" \
+            --raw-field sha="$(git rev-parse HEAD)"
+
+      - name: Commit Changes
+        if: env.changed == 'true'
+        id: commit_changes
+        uses: planetscale/ghcommit-action@25309d8005ac7c3bcd61d3fe19b69e0fe47dbdde # v0.2.20
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          commit_message: "🤖 Update .pre-commit-config.yaml"
+          file_pattern: ".pre-commit-config.yaml"
+          repo: ${{ github.repository }}
+          branch: ${{ env.branchName }}
+
+      - name: Find Previous Pull Request
+        if: env.changed == 'true'
+        id: find_previous_pull_request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          previousPullRequest=$(gh pr list --app "github-actions" --state open --search "🤖 pre-commit version update" --json "number" | jq -r '.[].number')
+          export previousPullRequest
+
+          if [[ -z "${previousPullRequest}" ]]; then
+            echo "No previous pull request found"
+          else
+            echo "Found previous pull request: ${previousPullRequest}"
+            echo "previousPullRequest=${previousPullRequest}" >>"${GITHUB_ENV}"
+          fi
+
+      - name: Create Pull Request
+        if: env.changed == 'true'
+        id: create_pull_request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH_NAME: ${{ env.branchName }}
+        shell: bash
+        run: |
+          pullRequestUrl=$(gh pr create \
+            --title "🤖 pre-commit version update" \
+            --body "This pull request updates the pre-commit configuration to the latest available versions.\n\n> [!NOTE]\nGitHub Actions workflows cannot be triggered by bots, so you may need to close and reopen the pull request to trigger them" \
+            --head "${BRANCH_NAME}" \
+            --base "main")
+          export pullRequestUrl
+          echo "pullRequestUrl=${pullRequestUrl}" >>"${GITHUB_ENV}"
+
+      - name: Close Previous Pull Request
+        if: env.changed == 'true' && env.previousPullRequest != ''
+        id: close_previous_pull_request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREVIOUS_PULL_REQUEST: ${{ env.previousPullRequest }}
+          NEW_PULL_REQUEST: ${{ env.pullRequestUrl }}
+        shell: bash
+        run: |
+          gh pr close "${PREVIOUS_PULL_REQUEST}" --comment "Superseded by ${NEW_PULL_REQUEST}" --delete-branch
