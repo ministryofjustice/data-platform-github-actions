@@ -5,8 +5,8 @@ on:
 permissions: {}
 
 jobs:
-  pre-commit-update:
-    name: pre-commit Update
+  pre-commit-updater:
+    name: pre-commit Updater
     runs-on: ubuntu-latest
     permissions:
       contents: write
