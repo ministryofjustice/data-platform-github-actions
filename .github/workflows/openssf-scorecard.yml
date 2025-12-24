@@ -34,7 +34,7 @@ jobs:
           results_format: sarif
           publish_results: true
 
-      - name: Upload SARIF file
+      - name: Upload SARIF File
         id: upload_sarif_file
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
         with:

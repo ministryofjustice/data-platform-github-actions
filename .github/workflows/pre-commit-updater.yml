@@ -46,10 +46,11 @@ jobs:
           fi
 
       - name: Create Branch
-        id: create_branch
         if: env.changed == 'true'
+        id: create_branch
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           branchName="pre-commit-update-$(date +%Y%m%d%H%M%S)"
           export branchName
@@ -64,19 +65,20 @@ jobs:
         if: env.changed == 'true'
         id: commit_changes
         uses: planetscale/ghcommit-action@25309d8005ac7c3bcd61d3fe19b69e0fe47dbdde # v0.2.20
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           commit_message: "🤖 Update .pre-commit-config.yaml"
           file_pattern: ".pre-commit-config.yaml"
           repo: ${{ github.repository }}
           branch: ${{ env.branchName }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find Previous Pull Request
-        id: find_previous_pull_request
         if: env.changed == 'true'
+        id: find_previous_pull_request
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
         run: |
           previousPullRequest=$(gh pr list --app "github-actions" --state open --search "🤖 pre-commit version update" --json "number" | jq -r '.[].number')
           export previousPullRequest
@@ -94,6 +96,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH_NAME: ${{ env.branchName }}
+        shell: bash
         run: |
           pullRequestUrl=$(gh pr create \
             --title "🤖 pre-commit version update" \
@@ -110,5 +113,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PREVIOUS_PULL_REQUEST: ${{ env.previousPullRequest }}
           NEW_PULL_REQUEST: ${{ env.pullRequestUrl }}
+        shell: bash
         run: |
           gh pr close "${PREVIOUS_PULL_REQUEST}" --comment "Superseded by ${NEW_PULL_REQUEST}" --delete-branch

@@ -34,9 +34,9 @@ jobs:
 
       - name: Parse Super Linter Variables
         id: parse_super_linter_variables
-        shell: bash
         env:
           SUPER_LINTER_VARIABLES: ${{ inputs.super-linter-variables }}
+        shell: bash
         run: |
           jq -r 'to_entries | .[] | "\(.key)=\(.value)"' <<< "${SUPER_LINTER_VARIABLES}" >>"${GITHUB_ENV}"
 

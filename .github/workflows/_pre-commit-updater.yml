@@ -9,7 +9,7 @@ on:
 permissions: {}
 
 jobs:
-  pre-commit-update:
+  pre-commit-updater:
     name: pre-commit Updater
     permissions:
       contents: write
