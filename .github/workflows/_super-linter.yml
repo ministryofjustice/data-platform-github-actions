@@ -20,5 +20,5 @@ jobs:
       # JSCPD is disabled as it detects duplication of Harden Runner + Checkout, but these are curated reusable workflows, so cannot reference each other
       super-linter-variables: |
         {
-          "VALIDATE_JSCPD": false,
+          "VALIDATE_JSCPD": false
         }
