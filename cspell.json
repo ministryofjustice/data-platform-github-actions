@@ -12,6 +12,7 @@
     "ossf",
     "planetscale",
     "sarif",
-    "zizmor"
+    "zizmor",
+    "zizmorcore"
   ]
 }
