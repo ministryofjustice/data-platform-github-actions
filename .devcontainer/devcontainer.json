@@ -15,5 +15,6 @@
         "streetsidesoftware.code-spell-checker"
       ]
     }
-  }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh"
 }
