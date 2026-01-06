@@ -7,7 +7,7 @@ updates:
       include: "scope"
       prefix: ":dependabot: devcontainers"
     cooldown:
-      default-days: 5
+      default-days: 7
       excludes:
         - "ghcr.io/ministryofjustice/devcontainer-feature/*"
     directory: "/"
@@ -19,7 +19,7 @@ updates:
       include: "scope"
       prefix: ":dependabot: github-actions"
     cooldown:
-      default-days: 5
+      default-days: 7
       excludes:
         - "ministryofjustice/action*"
         - "ministryofjustice/data-platform-github-actions*"
