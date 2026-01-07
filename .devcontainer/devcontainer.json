@@ -1,5 +1,5 @@
 {
-  "name": "analytical-platform-github-actions",
+  "name": "data-platform-github-actions",
   "image": "ghcr.io/ministryofjustice/devcontainer-base:latest",
   "features": {
     "ghcr.io/ministryofjustice/devcontainer-feature/astral:": {}
