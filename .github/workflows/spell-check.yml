@@ -26,6 +26,6 @@ jobs:
 
       - name: Spell Check
         id: spell_check
-        uses: streetsidesoftware/cspell-action@e5a858a18b7e0b56e0342b1dcad796308b7341a2 # v8.1.1
+        uses: streetsidesoftware/cspell-action@24fa8d3096a314ce263f39578744e9d9f8d80acf # v8.1.2
         with:
           treat_flagged_words_as_errors: true
