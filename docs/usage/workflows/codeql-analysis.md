@@ -28,6 +28,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Analysis
     permissions:
+      actions: read
       contents: read
       security-events: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/codeql-analysis.yml@<commit SHA> # <version>
@@ -43,6 +44,7 @@ jobs:
   codeql-analysis:
     name: CodeQL Analysis
     permissions:
+      actions: read
       contents: read
       security-events: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/codeql-analysis.yml@<commit SHA> # <version>
