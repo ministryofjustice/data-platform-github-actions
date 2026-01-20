@@ -100,7 +100,8 @@ jobs:
         run: |
           pullRequestUrl=$(gh pr create \
             --title "🤖 pre-commit version update" \
-            --body "This pull request updates the pre-commit configuration to the latest available versions.\n\n> [!NOTE]\nGitHub Actions workflows cannot be triggered by bots, so you may need to close and reopen the pull request to trigger them" \
+            --body "This pull request updates the pre-commit configuration to the latest available versions. Please note that GitHub Actions workflows cannot be triggered by bots, so you may need to close and reopen the pull request to trigger them." \
+            --label "dependencies" \
             --head "${BRANCH_NAME}" \
             --base "main")
           export pullRequestUrl
