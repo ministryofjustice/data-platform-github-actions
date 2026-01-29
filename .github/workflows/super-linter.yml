@@ -49,4 +49,4 @@ jobs:
           # Biome is very opinionated and enforces formatting rules that may conflict with other linters
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
-          VALIDATE_TERRASCAN: false
+          VALIDATE_TERRAFORM_TERRASCAN: false
