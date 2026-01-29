@@ -7,7 +7,7 @@ permissions: {}
 jobs:
   pre-commit-updater:
     name: pre-commit Updater
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write
       pull-requests: write
