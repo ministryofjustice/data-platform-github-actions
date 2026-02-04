@@ -1,6 +1,6 @@
 # Documentation
 
-Build and publishes documentation using [`ministryofjustice/tech-docs-github-pages-publisher`](https://github.com/ministryofjustice/tech-docs-github-pages-publisher) to GitHub Pages
+Builds and publishes documentation using [`ministryofjustice/tech-docs-github-pages-publisher`](https://github.com/ministryofjustice/tech-docs-github-pages-publisher) to GitHub Pages
 
 ## Usage
 
