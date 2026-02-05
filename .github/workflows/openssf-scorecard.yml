@@ -7,7 +7,7 @@ permissions: {}
 jobs:
   openssf-scorecard:
     name: OpenSSF Scorecard
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: read
       id-token: write
