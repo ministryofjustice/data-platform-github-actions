@@ -46,7 +46,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MULTI_STATUS: false
+          # Disabling pull request summary comment until it's less noisy
+          ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
           # Biome is very opinionated and enforces formatting rules that may conflict with other linters
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_BIOME_LINT: false
+          # Terrascan is archived and will be removed in a future version of Super-Linter
           VALIDATE_TERRAFORM_TERRASCAN: false
