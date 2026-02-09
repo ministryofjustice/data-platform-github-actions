@@ -46,7 +46,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MULTI_STATUS: false
-          # Disabling pull request summary comment until it's less noisy
+          # Disabling pull request summary comment until it's less noisy (tracked in super-linter issue #7458)
           ENABLE_GITHUB_PULL_REQUEST_SUMMARY_COMMENT: false
           # Biome is very opinionated and enforces formatting rules that may conflict with other linters
           VALIDATE_BIOME_FORMAT: false
