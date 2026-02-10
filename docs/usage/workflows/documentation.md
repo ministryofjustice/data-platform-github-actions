@@ -33,6 +33,5 @@ jobs:
       contents: read
       id-token: write
       pages: write
-      pull-requests: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/documentation.yml@<commit SHA> # <version>
 ```
