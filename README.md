@@ -20,6 +20,10 @@ See [`codeql-analysis`](/docs/usage/workflows/codeql-analysis.md)
 
 See [`dependency-review`](/docs/usage/workflows/dependency-review.md)
 
+### Documentation
+
+See [`documentation`](/docs/usage/workflows/documentation.md)
+
 ### OpenSSF Scorecard
 
 See [`openssf-scorecard`](/docs/usage/workflows/openssf-scorecard.md)
