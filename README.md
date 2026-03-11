@@ -28,10 +28,6 @@ See [`documentation`](/docs/usage/workflows/documentation.md)
 
 See [`openssf-scorecard`](/docs/usage/workflows/openssf-scorecard.md)
 
-### pre-commit Updater
-
-See [`pre-commit-updater`](/docs/usage/workflows/pre-commit-updater.md)
-
 ### Spell Check
 
 See [`spell-check`](/docs/usage/workflows/spell-check.md)
