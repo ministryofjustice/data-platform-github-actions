@@ -53,3 +53,5 @@ jobs:
           VALIDATE_BIOME_LINT: false
           # Terrascan is archived and will be removed in a future version of Super-Linter
           VALIDATE_TERRAFORM_TERRASCAN: false
+          # Organisation stance is to remove Trivy
+          VALIDATE_TRIVY: false
