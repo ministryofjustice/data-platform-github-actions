@@ -4,9 +4,10 @@ Runs [github/codeql-action/analyze](https://github.com/github/codeql-action/tree
 
 ## Inputs
 
-|    Input    |   Type   | Required |     Default     |
-| :---------: | :------: | :------: | :-------------: |
-| `languages` | `string` | `false`  | `'["actions"]'` |
+|    Input    |   Type   | Required |       Default       |
+| :---------: | :------: | :------: | :-----------------: |
+| `languages` | `string` | `false`  |   `'["actions"]'`   |
+|  `queries`  | `string` | `false`  | `security-extended` |
 
 ## Usage
 
