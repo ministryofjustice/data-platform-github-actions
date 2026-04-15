@@ -31,3 +31,5 @@ jobs:
         with:
           comment-summary-in-pr: true
           fail-on-severity: critical
+          retry-on-snapshot-warnings: true
+          retry-on-snapshot-warnings-timeout: 300
