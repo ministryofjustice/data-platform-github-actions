@@ -66,18 +66,13 @@ jobs:
         shell: bash
         run: |
           print_findings() {
-            local symbol=$1
-            local title=$2
-            local findings=$3
+            local title=$1
+            local findings=$2
 
             if [[ -n "${findings}" ]]; then
               echo "### ${title}"
               echo ""
-              echo '```diff'
-              echo "${findings}" | while IFS= read -r line; do
-                [[ -n "${line}" ]] && echo "${symbol} ${line}"
-              done
-              echo '```'
+              echo "${findings}"
               echo ""
             fi
           }
@@ -88,6 +83,12 @@ jobs:
           RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
             .runs[0].tool.driver.rules
             | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
+            | from_entries
+          ')
+
+          RULE_LINKS=$(echo "${SARIF}" | jq -c '
+            .runs[0].tool.driver.rules
+            | map({key: .id, value: (.helpUri // "")})
             | from_entries
           ')
 
@@ -111,24 +112,34 @@ jobs:
               echo "## Detailed Findings"
               echo ""
 
-              CRITICAL_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" '
-                .runs[0].results[] | select($s[.ruleId] >= 9.0) | .message.text
+              CRITICAL_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" --argjson l "${RULE_LINKS}" '
+                .runs[0].results[]
+                | select($s[.ruleId] >= 9.0)
+                | if (($l[.ruleId] // "") != "")
+                  then "- [\(.ruleId)](\($l[.ruleId])) - \(.message.text)"
+                  else "- \(.ruleId) - \(.message.text)"
+                  end
               ')
-              HIGH_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" '
-                .runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0) | .message.text
+              HIGH_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" --argjson l "${RULE_LINKS}" '
+                .runs[0].results[]
+                | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)
+                | if (($l[.ruleId] // "") != "")
+                  then "- [\(.ruleId)](\($l[.ruleId])) - \(.message.text)"
+                  else "- \(.ruleId) - \(.message.text)"
+                  end
               ')
 
-              print_findings "-" "Critical" "${CRITICAL_FINDINGS}"
-              print_findings "-" "High" "${HIGH_FINDINGS}"
+              print_findings "Critical" "${CRITICAL_FINDINGS}"
+              print_findings "High" "${HIGH_FINDINGS}"
+
+              echo "## Source"
+              echo ""
+              echo "<table>"
+              echo "<tr><td><strong>Actor</strong></td><td>@${GITHUB_ACTOR}</td></tr>"
+              echo "<tr><td><strong>Commit</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\"><code>${GITHUB_SHA}</code></a></td></tr>"
+              echo "<tr><td><strong>Workflow</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View run</a></td></tr>"
+              echo "</table>"
             fi
-
-            echo "## Source"
-            echo ""
-            echo "<table>"
-            echo "<tr><td><strong>Actor</strong></td><td>@${GITHUB_ACTOR}</td></tr>"
-            echo "<tr><td><strong>Commit</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\"><code>${GITHUB_SHA}</code></a></td></tr>"
-            echo "<tr><td><strong>Workflow</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View run</a></td></tr>"
-            echo "</table>"
           })
 
           echo "${SCAN_OUTPUT}"
