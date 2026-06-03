@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
+      pull-requests: write
       security-events: write
     steps:
       - name: Harden Runner
@@ -52,10 +53,123 @@ jobs:
           only-fixed: true
           fail-build: false
           output-format: sarif
-          output-file: results.sarif
+          output-file: result.sarif
 
       - name: Upload SARIF
         id: upload_sarif
         uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
         with:
-          sarif_file: results.sarif
+          sarif_file: result.sarif
+
+      - name: Process Scan Result
+        id: process_scan_result
+        shell: bash
+        run: |
+          print_findings() {
+            local symbol=$1
+            local title=$2
+            local findings=$3
+
+            if [[ -n "${findings}" ]]; then
+              echo "### ${title}"
+              echo ""
+              echo '```diff'
+              echo "${findings}" | while IFS= read -r line; do
+                [[ -n "${line}" ]] && echo "${symbol} ${line}"
+              done
+              echo '```'
+              echo ""
+            fi
+          }
+
+          SARIF=$(cat result.sarif)
+
+          # Build a lookup map of ruleId -> security-severity score from the rules section
+          RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
+            .runs[0].tool.driver.rules
+            | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
+            | from_entries
+          ')
+
+          CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
+          ')
+          HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [.runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)] | length
+          ')
+          TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
+
+          SCAN_OUTPUT=$({
+            echo "# Container Scan Summary"
+            echo ""
+
+            if [[ ${TOTAL} -eq 0 ]]; then
+              echo "✅ No fixable high or critical vulnerabilities found."
+            else
+              echo "${CRITICAL_COUNT} critical, ${HIGH_COUNT} high."
+              echo ""
+              echo "## Detailed Findings"
+              echo ""
+
+              CRITICAL_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" '
+                .runs[0].results[] | select($s[.ruleId] >= 9.0) | .message.text
+              ')
+              HIGH_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" '
+                .runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0) | .message.text
+              ')
+
+              print_findings "-" "Critical" "${CRITICAL_FINDINGS}"
+              print_findings "-" "High" "${HIGH_FINDINGS}"
+            fi
+
+            echo "## Source"
+            echo ""
+            echo "<table>"
+            echo "<tr><td><strong>Actor</strong></td><td>@${GITHUB_ACTOR}</td></tr>"
+            echo "<tr><td><strong>Commit</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\"><code>${GITHUB_SHA}</code></a></td></tr>"
+            echo "<tr><td><strong>Workflow</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View run</a></td></tr>"
+            echo "</table>"
+          })
+
+          echo "${SCAN_OUTPUT}"
+          {
+            echo "scan-summary<<EOF"
+            echo "${SCAN_OUTPUT}"
+            echo "EOF"
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Comment on Pull Request
+        if: github.event_name == 'pull_request'
+        id: comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SCAN_SUMMARY: ${{ steps.process_scan_results.outputs.scan-summary }}
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Container Scan Summary')
+            })
+
+            const output = `${process.env.SCAN_SUMMARY}`;
+
+            if (botComment) {
+              github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: output
+              })
+            }
