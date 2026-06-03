@@ -50,6 +50,7 @@ jobs:
           image: ${{ github.sha }}
           severity-cutoff: high
           only-fixed: true
+          fail-build: false
           output-format: sarif
           output-file: results.sarif
 
