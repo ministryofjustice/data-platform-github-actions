@@ -1,6 +1,15 @@
 ---
 on:
   workflow_call:
+    inputs:
+      build-context:
+        type: string
+        required: false
+        default: "."
+      containerfile-path:
+        type: string
+        required: false
+        default: "Containerfile"
 
 permissions: {}
 
@@ -23,3 +32,12 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Build
+        id: build
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ${{ inputs.build-context }}
+          file: ${{ inputs.containerfile-path }}
+          push: false
+          tags: ${{ github.sha }}

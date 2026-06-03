@@ -4,6 +4,7 @@
   "language": "en-GB",
   "words": [
     "autobuild",
+    "containerfile",
     "cooldown",
     "ghcommit",
     "linters",
