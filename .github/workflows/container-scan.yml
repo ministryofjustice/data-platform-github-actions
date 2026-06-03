@@ -106,28 +106,27 @@ jobs:
               echo "## Detailed Findings"
               echo ""
 
-              CRITICAL_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" '
-                .runs[0].results[]
-                | select($s[.ruleId] >= 9.0)
-                | (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $advisory_id
-                | (if ($advisory_id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($advisory_id)"
-                   elif ($advisory_id | startswith("GHSA-")) then "https://github.com/advisories/\($advisory_id)"
-                   else "" end) as $url
-                | if $url != "" then "- [\($advisory_id)](\($url)) - \(.message.text)"
-                  else "- \(.ruleId) - \(.message.text)"
-                  end
-              ')
-              HIGH_FINDINGS=$(echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" '
-                .runs[0].results[]
-                | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)
-                | (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $advisory_id
-                | (if ($advisory_id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($advisory_id)"
-                   elif ($advisory_id | startswith("GHSA-")) then "https://github.com/advisories/\($advisory_id)"
-                   else "" end) as $url
-                | if $url != "" then "- [\($advisory_id)](\($url)) - \(.message.text)"
-                  else "- \(.ruleId) - \(.message.text)"
-                  end
-              ')
+              get_findings() {
+                local min_score=$1
+                local max_score=$2
+                echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
+                  --argjson min "${min_score}" --argjson max "${max_score}" '
+                  def advisory_line:
+                    (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
+                    | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
+                       elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
+                       else "" end) as $url
+                    | if $url != "" then "- [\($id)](\($url)) - \(.message.text)"
+                      else "- \(.ruleId) - \(.message.text)"
+                      end;
+                  .runs[0].results[]
+                  | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
+                  | advisory_line
+                '
+              }
+
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1)
+              HIGH_FINDINGS=$(get_findings 7.0 9.0)
 
               print_findings "Critical" "${CRITICAL_FINDINGS}"
               print_findings "High" "${HIGH_FINDINGS}"
