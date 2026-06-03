@@ -143,7 +143,7 @@ jobs:
         id: comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
-          SCAN_SUMMARY: ${{ steps.process_scan_results.outputs.scan-summary }}
+          SCAN_SUMMARY: ${{ steps.process_scan_result.outputs.scan-summary }}
         with:
           script: |
             const { data: comments } = await github.rest.issues.listComments({
