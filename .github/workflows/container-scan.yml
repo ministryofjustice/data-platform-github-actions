@@ -81,16 +81,16 @@ jobs:
 
           # Build a lookup map of ruleId -> security-severity score from the rules section
           RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
-            .runs[0].tool.driver.rules
+            (.runs[0].tool.driver.rules // [])
             | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
             | from_entries
           ')
 
           CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
-            [.runs[0].results[] | select($s[.ruleId] >= 9.0)] | length
+            [(.runs[0].results // [])[] | select(($s[.ruleId] // 0) >= 9.0)] | length
           ')
           HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
-            [.runs[0].results[] | select($s[.ruleId] >= 7.0 and $s[.ruleId] < 9.0)] | length
+            [(.runs[0].results // [])[] | select(($s[.ruleId] // 0) >= 7.0 and ($s[.ruleId] // 0) < 9.0)] | length
           ')
           TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
 
@@ -119,8 +119,8 @@ jobs:
                     | if $url != "" then "- [\($id)](\($url)) - \(.message.text)"
                       else "- \(.ruleId) - \(.message.text)"
                       end;
-                  .runs[0].results[]
-                  | select($s[.ruleId] >= $min and $s[.ruleId] < $max)
+                  (.runs[0].results // [])[]
+                  | select(($s[.ruleId] // 0) >= $min and ($s[.ruleId] // 0) < $max)
                   | advisory_line
                 '
               }
