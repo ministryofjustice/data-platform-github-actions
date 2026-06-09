@@ -20,6 +20,7 @@
     "sarif",
     "startswith",
     "terrascan",
+    "toolkits",
     "tonumber",
     "zizmor",
     "zizmorcore"
