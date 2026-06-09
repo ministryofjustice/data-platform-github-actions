@@ -16,6 +16,10 @@ This repository contains Data Platform's reusable workflows.
 
 See [`codeql-analysis`](/docs/usage/workflows/codeql-analysis.md)
 
+### Container Scan
+
+See [`container-scan`](/docs/usage/workflows/container-scan.md)
+
 ### Dependency Review
 
 See [`dependency-review`](/docs/usage/workflows/dependency-review.md)
