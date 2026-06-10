@@ -31,7 +31,4 @@ jobs:
       pull-requests: write
       security-events: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/container-scan.yml@<commit SHA> # <version>
-    with:
-      build-context: .
-      containerfile-path: Containerfile
 ```
