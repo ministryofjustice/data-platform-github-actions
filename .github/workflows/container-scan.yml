@@ -50,6 +50,7 @@ jobs:
         id: generate_grype_config
         env:
           CONTAINERFILE_PATH: ${{ inputs.containerfile-path }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
           baseImage=$(grep "^FROM" "${CONTAINERFILE_PATH}" | cut -d' ' -f2 | cut -d':' -f1)
