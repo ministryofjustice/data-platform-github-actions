@@ -4,10 +4,11 @@ Builds a container image, scans it with [anchore/scan-action](https://github.com
 
 ## Inputs
 
-|        Input         |   Type   | Required |     Default     |
-| :------------------: | :------: | :------: | :-------------: |
-|   `build-context`    | `string` | `false`  |       `.`       |
-| `containerfile-path` | `string` | `false`  | `Containerfile` |
+|         Input          |   Type    | Required |     Default     |
+| :--------------------: | :-------: | :------: | :-------------: |
+|    `build-context`     | `string`  | `false`  |       `.`       |
+| `clean-actions-runner` | `boolean` | `false`  |     `true`      |
+|  `containerfile-path`  | `string`  | `false`  | `Containerfile` |
 
 ## Usage
 
