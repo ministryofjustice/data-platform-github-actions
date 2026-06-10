@@ -1,0 +1,172 @@
+---
+on:
+  workflow_call:
+    inputs:
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: false
+      container-file:
+        type: string
+        required: false
+        default: Dockerfile
+
+permissions: {}
+
+jobs:
+  container-release:
+    name: Container Release
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
+        id: clean_actions_runner
+        uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
+        with:
+          confirm: true
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install Cosign
+        id: install_cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+
+      - name: Log in to GitHub Container Registry
+        id: login_ghcr
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        id: build_and_push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: .
+          file: ${{ inputs.container-file }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+      - name: Cosign
+        id: cosign
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cosign sign --yes "ghcr.io/${{ github.repository }}@${DIGEST}"
+
+      - name: Generate SBOM
+        id: generate_sbom
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ steps.build_and_push.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+
+      - name: Generate Provenance Predicate
+        id: generate_provenance_predicate
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cat <<EOF > provenance.json
+          {
+            "buildType": "https://github.com/Attestations/GitHubActionsWorkflow@v1",
+            "builder": {
+              "id": "https://github.com/${{ github.repository }}/.github/workflows/container-release.yml"
+            },
+            "invocation": {
+              "configSource": {
+                "uri": "git+https://github.com/${{ github.repository }}.git",
+                "digest": {
+                  "sha1": "${{ github.sha }}"
+                },
+                "entryPoint": ".github/workflows/container-release.yml"
+              }
+            },
+            "metadata": {
+              "buildInvocationId": "${{ github.run_id }}"
+            },
+            "subject": [
+              {
+                "name": "ghcr.io/${{ github.repository }}",
+                "digest": {
+                  "sha256": "${DIGEST#sha256:}"
+                }
+              }
+            ]
+          }
+          EOF
+
+      - name: Cosign SBOM Attestation
+        id: cosign_sbom_attestation
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cosign attest --yes \
+            --type cyclonedx \
+            --predicate sbom.cyclonedx.json \
+            "ghcr.io/${{ github.repository }}@${DIGEST}"
+
+      - name: Cosign Provenance Attestation
+        id: cosign_provenance_attestation
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cosign attest --yes \
+            --type slsaprovenance \
+            --predicate provenance.json \
+            "ghcr.io/${{ github.repository }}@${DIGEST}"
+
+      - name: Cosign Verification
+        id: cosign_verification
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cosign verify \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp="https://github\.com/ministryofjustice/data-platform-github-actions/\.github/workflows/container-release\.yml.+" \
+            "ghcr.io/${{ github.repository }}@${DIGEST}"
+
+      - name: Cosign SBOM Attestation Verification
+        id: cosign_sbom_attestation_verification
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cosign verify-attestation \
+            --type cyclonedx \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp="https://github\.com/ministryofjustice/data-platform-github-actions/\.github/workflows/container-release\.yml.+" \
+            "ghcr.io/${{ github.repository }}@${DIGEST}"
+
+      - name: Cosign Provenance Attestation Verification
+        id: cosign_provenance_attestation_verification
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+        run: |
+          cosign verify-attestation \
+            --type slsaprovenance \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity-regexp="https://github\.com/ministryofjustice/data-platform-github-actions/\.github/workflows/container-release\.yml.+" \
+            "ghcr.io/${{ github.repository }}@${DIGEST}"
