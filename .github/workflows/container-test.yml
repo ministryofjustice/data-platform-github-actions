@@ -57,7 +57,7 @@ jobs:
         id: build
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
-          context: ${{ inputs.build-context }}
+          context: ${{ inputs.build-context }} # zizmor: ignore[template-injection]
           file: ${{ inputs.containerfile-path }}
           push: false
           tags: ${{ github.sha }}
@@ -66,6 +66,7 @@ jobs:
         id: test
         env:
           CONFIGURATION_FILE: ${{ inputs.configuration-file }}
+          IMAGE_TAG: ${{ github.sha }}
         shell: bash
         run: |
-          container-structure-test test --platform linux/arm64 --config "${CONFIGURATION_FILE}" --image "${{ github.sha }}"
+          container-structure-test test --platform linux/arm64 --config "${CONFIGURATION_FILE}" --image "${IMAGE_TAG}"
