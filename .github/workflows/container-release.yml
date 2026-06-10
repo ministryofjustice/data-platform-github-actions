@@ -95,8 +95,9 @@ jobs:
         env:
           DIGEST: ${{ steps.build_and_push.outputs.digest }}
           GH_TOKEN: ${{ github.token }}
+          IMAGE_REPOSITORY: ${{ github.repository }}
         run: |
           gh attestation verify \
-            "oci://ghcr.io/${{ github.repository }}@${DIGEST}" \
-            --repo ${{ github.repository }} \
+            "oci://ghcr.io/${IMAGE_REPOSITORY}@${DIGEST}" \
+            --repo "${IMAGE_REPOSITORY}" \
             --signer-workflow ministryofjustice/data-platform-github-actions/.github/workflows/container-release.yml
