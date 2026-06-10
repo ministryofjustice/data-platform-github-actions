@@ -1,0 +1,256 @@
+---
+on:
+  workflow_call:
+    inputs:
+      build-context:
+        type: string
+        required: false
+        default: "."
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: true
+      containerfile-path:
+        type: string
+        required: false
+        default: "Containerfile"
+
+permissions: {}
+
+jobs:
+  container-scan:
+    name: Container Scan
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+      pull-requests: write
+      security-events: write
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
+        id: clean_actions_runner
+        uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
+        with:
+          confirm: true
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Generate Grype Configuration
+        id: generate_grype_config
+        env:
+          CONTAINERFILE_PATH: ${{ inputs.containerfile-path }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          baseImage=$(grep "^FROM" "${CONTAINERFILE_PATH}" | cut -d' ' -f2 | cut -d':' -f1)
+
+          if [[ "${baseImage}" == "ghcr.io/ministryofjustice/data-platform-"* ]]; then
+            baseImageRepository=${baseImage#ghcr.io/}
+
+            downloadGrypeYml=$(gh api "repos/${baseImageRepository}/contents/.grype.yml" 2>/dev/null || true)
+            export downloadGrypeYml
+
+            downloadGrypeYmlStatus=$(jq -r '.status' <<< "${downloadGrypeYml}")
+            export downloadGrypeYmlStatus
+
+            if [[ "${downloadGrypeYmlStatus}" == "null" ]]; then
+              echo "Using .grype.yml from ${baseImageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadGrypeYml}" || true
+
+              echo ".grype.yml found, writing to file"
+              jq -r '.content' <<< "${downloadGrypeYml}" | base64 --decode > .base-grype.yml
+
+              if [[ ! -f .grype.yml ]]; then
+                echo ".grype.yml not found, using base as-is"
+                mv .base-grype.yml .grype.yml
+              else
+                echo ".grype.yml already exists, merging with base"
+                # shellcheck disable=SC2016
+                yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' .base-grype.yml .grype.yml > merged-grype.yml
+                mv merged-grype.yml .grype.yml
+              fi
+
+            elif [[ "${downloadGrypeYmlStatus}" == "404" ]]; then
+              echo ".grype.yml not found in ${baseImageRepository}, using default values" # It's OK if we don't find one
+            else
+              echo "Error downloading .grype.yml"
+              exit 1
+            fi
+          else
+            echo "Image is not an Data Platform image, skipping .grype.yml download"
+          fi
+
+      - name: Build
+        id: build
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ${{ inputs.build-context }} # zizmor: ignore[template-injection]
+          file: ${{ inputs.containerfile-path }}
+          push: false
+          tags: ${{ github.sha }}
+
+      - name: Scan
+        id: scan
+        uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
+        with:
+          image: ${{ github.sha }}
+          severity-cutoff: high
+          only-fixed: true
+          fail-build: false
+          output-format: sarif
+          output-file: result.sarif
+
+      - name: Upload SARIF
+        id: upload_sarif
+        uses: github/codeql-action/upload-sarif@7211b7c8077ea37d8641b6271f6a365a22a5fbfa # v4.36.0
+        with:
+          sarif_file: result.sarif
+
+      - name: Process Scan Result
+        id: process_scan_result
+        shell: bash
+        run: |
+          print_findings() {
+            local title=$1
+            local findings=$2
+
+            if [[ -n "${findings}" ]]; then
+              echo "### ${title}"
+              echo ""
+              echo "${findings}"
+              echo ""
+            fi
+          }
+
+          SARIF=$(cat result.sarif)
+
+          # Build a lookup map of ruleId -> security-severity score from the rules section
+          RULE_SEVERITIES=$(echo "${SARIF}" | jq -c '
+            (.runs[0].tool.driver.rules // [])
+            | map({key: .id, value: (.properties["security-severity"] // "0" | tonumber)})
+            | from_entries
+          ')
+
+          CRITICAL_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [(.runs[0].results // [])[] | select(($s[.ruleId] // 0) >= 9.0)] | length
+          ')
+          HIGH_COUNT=$(echo "${SARIF}" | jq --argjson s "${RULE_SEVERITIES}" '
+            [(.runs[0].results // [])[] | select(($s[.ruleId] // 0) >= 7.0 and ($s[.ruleId] // 0) < 9.0)] | length
+          ')
+          TOTAL=$((CRITICAL_COUNT + HIGH_COUNT))
+
+          SCAN_OUTPUT=$({
+            echo "# Container Scan Summary"
+            echo ""
+
+            if [[ ${TOTAL} -eq 0 ]]; then
+              echo "✅ No fixable high or critical vulnerabilities found."
+            else
+              echo "${CRITICAL_COUNT} critical, ${HIGH_COUNT} high."
+              echo ""
+              echo "## Detailed Findings"
+              echo ""
+
+              get_findings() {
+                local min_score=$1
+                local max_score=$2
+                echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
+                  --argjson min "${min_score}" --argjson max "${max_score}" '
+                  def advisory_line:
+                    (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
+                    | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
+                      elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
+                      else "" end) as $url
+                    | if $url != "" then "- [\($id)](\($url)) - \(.message.text)"
+                      else "- \(.ruleId) - \(.message.text)"
+                      end;
+                  (.runs[0].results // [])[]
+                  | select(($s[.ruleId] // 0) >= $min and ($s[.ruleId] // 0) < $max)
+                  | advisory_line
+                '
+              }
+
+              CRITICAL_FINDINGS=$(get_findings 9.0 10.1)
+              HIGH_FINDINGS=$(get_findings 7.0 9.0)
+
+              print_findings "Critical" "${CRITICAL_FINDINGS}"
+              print_findings "High" "${HIGH_FINDINGS}"
+
+              echo "## Source"
+              echo ""
+              echo "<table>"
+              echo "<tr><td><strong>Actor</strong></td><td>@${GITHUB_ACTOR}</td></tr>"
+              echo "<tr><td><strong>Commit</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}\"><code>${GITHUB_SHA}</code></a></td></tr>"
+              echo "<tr><td><strong>Workflow</strong></td><td><a href=\"https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\">View run</a></td></tr>"
+              echo "</table>"
+            fi
+          })
+
+          echo "${SCAN_OUTPUT}"
+          {
+            echo "scan_summary<<EOF"
+            echo "${SCAN_OUTPUT}"
+            echo "EOF"
+            echo "critical_count=${CRITICAL_COUNT}"
+            echo "high_count=${HIGH_COUNT}"
+          } >>"${GITHUB_OUTPUT}"
+
+      - name: Comment on Pull Request
+        id: comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          SCAN_SUMMARY: ${{ steps.process_scan_result.outputs.scan_summary }}
+        with:
+          script: |
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            })
+
+            const botComment = comments.find(comment => {
+              return comment.user.type === 'Bot' && comment.body.includes('Container Scan Summary')
+            })
+
+            const output = `${process.env.SCAN_SUMMARY}`;
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: output
+              })
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: output
+              })
+            }
+
+      - name: Fail Build on Findings
+        if: ${{
+          steps.process_scan_result.outputs.critical_count > 0 ||
+          steps.process_scan_result.outputs.high_count > 0
+          }}
+        id: fail_build
+        shell: bash
+        env:
+          CRITICAL_COUNT: ${{ steps.process_scan_result.outputs.critical_count }}
+          HIGH_COUNT: ${{ steps.process_scan_result.outputs.high_count }}
+        run: |
+          echo "Build failed - found ${CRITICAL_COUNT} critical and ${HIGH_COUNT} high severity fixable vulnerabilities"
+          exit 1

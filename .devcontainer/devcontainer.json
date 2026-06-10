@@ -2,6 +2,7 @@
   "name": "data-platform-github-actions",
   "image": "ghcr.io/ministryofjustice/devcontainer-base:latest",
   "features": {
+    "ghcr.io/ministryofjustice/devcontainer-feature/apm:": {},
     "ghcr.io/ministryofjustice/devcontainer-feature/astral:": {}
   },
   "customizations": {
