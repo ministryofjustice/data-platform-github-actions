@@ -4,11 +4,12 @@ Builds and tests a container with [Container Structure Test](https://github.com/
 
 ## Inputs
 
-|         Input          |   Type   | Required |               Default               |
-| :--------------------: | :------: | :------: | :---------------------------------: |
-| `clean-actions-runner` |  `bool`  | `false`  |               `true`                |
-|  `configuration-file`  | `string` | `false`  | `test/container-structure-test.yml` |
-|    `container-file`    | `string` | `false`  |            `Dockerfile`             |
+|         Input          |   Type    | Required |               Default               |
+| :--------------------: | :-------: | :------: | :---------------------------------: |
+|    `build-context`     | `string`  | `false`  |                 `.`                 |
+| `clean-actions-runner` | `boolean` | `false`  |               `true`                |
+|  `configuration-file`  | `string`  | `false`  | `test/container-structure-test.yml` |
+|  `containerfile-path`  | `string`  | `false`  |           `Containerfile`           |
 
 ## Usage
 
@@ -28,5 +29,5 @@ jobs:
     name: Container Test
     permissions:
       contents: read
-    uses: ministryofjustice/data-platform-github-actions/.github/workflows/-container-test.yml@<commit SHA> # <version>
+    uses: ministryofjustice/data-platform-github-actions/.github/workflows/container-test.yml@<commit SHA> # <version>
 ```
