@@ -7,7 +7,7 @@ Builds a container image, scans it with [anchore/scan-action](https://github.com
 |         Input          |   Type    | Required |     Default     |
 | :--------------------: | :-------: | :------: | :-------------: |
 |    `build-context`     | `string`  | `false`  |       `.`       |
-| `clean-actions-runner` | `boolean` | `false`  |     `true`      |
+| `clean-actions-runner` | `boolean` | `false`  |     `false`     |
 |  `containerfile-path`  | `string`  | `false`  | `Containerfile` |
 
 ## Usage
