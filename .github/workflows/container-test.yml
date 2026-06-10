@@ -1,0 +1,71 @@
+---
+on:
+  workflow_call:
+    inputs:
+      build-context:
+        type: string
+        required: false
+        default: "."
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: true
+      containerfile-path:
+        type: string
+        required: false
+        default: "Containerfile"
+      configuration-file:
+        type: string
+        required: false
+        default: test/container-structure-test.yml
+
+
+permissions: {}
+
+jobs:
+  container-test:
+    name: Container Test
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      contents: read
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@ab7a9404c0f3da075243ca237b5fac12c98deaa5 # v2.19.3
+        with:
+          egress-policy: audit
+
+      - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
+        id: clean_actions_runner
+        uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
+        with:
+          confirm: true
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set Up Container Structure Test
+        id: setup_container_structure_test
+        uses: ministryofjustice/action-setup-container-structure-test@d0636fa19d04c3fc71c30ae4eb8da03be63dbd4b # v1.0.0
+
+      - name: Build
+        id: build
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ${{ inputs.build-context }}
+          file: ${{ inputs.containerfile-path }}
+          push: false
+          tags: ${{ github.sha }}
+
+      - name: Test
+        id: test
+        env:
+          CONFIGURATION_FILE: ${{ inputs.configuration-file }}
+        shell: bash
+        run: |
+          container-structure-test test --platform linux/arm64 --config "${CONFIGURATION_FILE}" --image "${{ github.sha }}"
