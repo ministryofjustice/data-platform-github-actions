@@ -55,7 +55,7 @@ jobs:
         run: |
           baseImage=$(grep "^FROM" "${CONTAINERFILE_PATH}" | cut -d' ' -f2 | cut -d':' -f1)
 
-          if [[ "${baseImage}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
+          if [[ "${baseImage}" == "ghcr.io/ministryofjustice/data-platform-"* ]]; then
             baseImageRepository=${baseImage#ghcr.io/}
 
             downloadGrypeYml=$(gh api "repos/${baseImageRepository}/contents/.grype.yml" 2>/dev/null || true)
@@ -88,7 +88,7 @@ jobs:
               exit 1
             fi
           else
-            echo "Image is not an Analytical Platform image, skipping .grype.yml download"
+            echo "Image is not an Data Platform image, skipping .grype.yml download"
           fi
 
       - name: Build
