@@ -7,7 +7,7 @@ Builds and tests a container with [Container Structure Test](https://github.com/
 |         Input          |   Type    | Required |               Default               |
 | :--------------------: | :-------: | :------: | :---------------------------------: |
 |    `build-context`     | `string`  | `false`  |                 `.`                 |
-| `clean-actions-runner` | `boolean` | `false`  |               `true`                |
+| `clean-actions-runner` | `boolean` | `false`  |               `false`               |
 |  `configuration-file`  | `string`  | `false`  | `test/container-structure-test.yml` |
 |  `containerfile-path`  | `string`  | `false`  |           `Containerfile`           |
 

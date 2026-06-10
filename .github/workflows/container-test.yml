@@ -9,7 +9,7 @@ on:
       clean-actions-runner:
         type: boolean
         required: false
-        default: true
+        default: false
       containerfile-path:
         type: string
         required: false
