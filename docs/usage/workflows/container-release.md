@@ -17,9 +17,9 @@ Builds and pushes a container image to GitHub Container Registry, generates an S
 name: Container Release
 
 on:
-  pull_request:
-    branches:
-      - main
+  push:
+    tags:
+      - "*"
 
 permissions: {}
 
