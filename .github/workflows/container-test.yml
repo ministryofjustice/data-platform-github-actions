@@ -19,7 +19,6 @@ on:
         required: false
         default: test/container-structure-test.yml
 
-
 permissions: {}
 
 jobs:
