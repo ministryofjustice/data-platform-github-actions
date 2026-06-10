@@ -6,6 +6,10 @@ on:
         type: string
         required: false
         default: "."
+      clean-actions-runner:
+        type: boolean
+        required: false
+        default: true
       containerfile-path:
         type: string
         required: false
@@ -29,11 +33,62 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Clean Actions Runner
+        if: inputs.clean-actions-runner == true
+        id: clean_actions_runner
+        uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
+        with:
+          confirm: true
+
       - name: Checkout
         id: checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+
+      - name: Generate Grype Configuration
+        id: generate_grype_config
+        env:
+          CONTAINERFILE_PATH: ${{ inputs.containerfile-path }}
+        shell: bash
+        run: |
+          baseImage=$(grep "^FROM" "${CONTAINERFILE_PATH}" | cut -d' ' -f2 | cut -d':' -f1)
+
+          if [[ "${baseImage}" == "ghcr.io/ministryofjustice/analytical-platform-"* ]]; then
+            baseImageRepository=${baseImage#ghcr.io/}
+
+            downloadGrypeYml=$(gh api "repos/${baseImageRepository}/contents/.grype.yml" 2>/dev/null || true)
+            export downloadGrypeYml
+
+            downloadGrypeYmlStatus=$(jq -r '.status' <<< "${downloadGrypeYml}")
+            export downloadGrypeYmlStatus
+
+            if [[ "${downloadGrypeYmlStatus}" == "null" ]]; then
+              echo "Using .grype.yml from ${baseImageRepository} (default branch)"
+              jq -r '.sha' <<< "${downloadGrypeYml}" || true
+
+              echo ".grype.yml found, writing to file"
+              jq -r '.content' <<< "${downloadGrypeYml}" | base64 --decode > .base-grype.yml
+
+              if [[ ! -f .grype.yml ]]; then
+                echo ".grype.yml not found, using base as-is"
+                mv .base-grype.yml .grype.yml
+              else
+                echo ".grype.yml already exists, merging with base"
+                # shellcheck disable=SC2016
+                yq eval-all 'explode(.) as $item ireduce ({}; . *+ $item)' .base-grype.yml .grype.yml > merged-grype.yml
+                mv merged-grype.yml .grype.yml
+              fi
+
+            elif [[ "${downloadGrypeYmlStatus}" == "404" ]]; then
+              echo ".grype.yml not found in ${baseImageRepository}, using default values" # It's OK if we don't find one
+            else
+              echo "Error downloading .grype.yml"
+              exit 1
+            fi
+          else
+            echo "Image is not an Analytical Platform image, skipping .grype.yml download"
+          fi
 
       - name: Build
         id: build
