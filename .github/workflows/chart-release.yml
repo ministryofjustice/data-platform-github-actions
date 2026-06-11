@@ -1,0 +1,89 @@
+---
+on:
+  workflow_call:
+    inputs:
+      chart-name:
+        type: string
+        required: true
+      chart-path:
+        type: string
+        required: false
+        default: chart
+
+permissions: {}
+
+jobs:
+  chart-release:
+    name: Chart Release
+    runs-on: ubuntu-latest
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+      packages: write
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Set Up Helm
+        id: setup_helm
+        uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
+
+      - name: Log in to GitHub Container Registry
+        id: login_ghcr
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package Chart
+        id: package_chart
+        shell: bash
+        env:
+          CHART_PATH: ${{ inputs.chart-path }}
+        run: |
+          helm package "${CHART_PATH}" --destination .helm-deploy
+          CHART_VERSION=$(grep -E '^version:' "${CHART_PATH}/Chart.yaml" | awk '{print $2}')
+          echo "CHART_VERSION=${CHART_VERSION}" >> "${GITHUB_ENV}"
+
+      - name: Push Chart
+        id: push_chart
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+        run: |
+          OUTPUT=$(helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/data-platform-charts)
+          DIGEST=$(echo "${OUTPUT}" | grep -oP 'Digest: \K.*')
+          echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
+
+      - name: GitHub Attestation
+        id: github_attestation
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-name: ghcr.io/ministryofjustice/data-platform-charts/${{ inputs.chart-name }}
+          subject-digest: ${{ steps.push_chart.outputs.digest }}
+          push-to-registry: true
+
+      - name: GitHub Attestation Verification
+        id: github_attestation_verification
+        shell: bash
+        env:
+          CHART_NAME: ${{ inputs.chart-name }}
+          GH_TOKEN: ${{ github.token }}
+          CHART_VERSION: ${{ env.CHART_VERSION }}
+        run: |
+          gh attestation verify \
+            "oci://ghcr.io/ministryofjustice/data-platform-charts/${CHART_NAME}:${CHART_VERSION}" \
+            --repo ${{ github.repository }} \
+            --signer-workflow ministryofjustice/data-platform-github-actions/.github/workflows/chart-release.yml
