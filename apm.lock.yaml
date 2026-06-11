@@ -1,10 +1,10 @@
 lockfile_version: '1'
-generated_at: '2026-06-09T12:30:40.576329+00:00'
-apm_version: 0.18.0
+generated_at: '2026-06-11T16:19:34.748511+00:00'
+apm_version: 0.19.0
 dependencies:
 - repo_url: ministryofjustice/data-platform-ai-toolkit
   host: github.com
-  resolved_commit: cf59013f82b1e9aa6e3dcd60ee7035aeed23d0d1
+  resolved_commit: 125aa26d61e0920fb85af26131da7832d8e5467c
   resolved_ref: main
   virtual_path: toolkits/universal
   is_virtual: true
