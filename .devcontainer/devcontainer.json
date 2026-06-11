@@ -2,6 +2,8 @@
   "name": "data-platform-github-actions",
   "image": "ghcr.io/ministryofjustice/devcontainer-base:latest",
   "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:": {},
+    "ghcr.io/devcontainers/features/github-cli:": {},
     "ghcr.io/ministryofjustice/devcontainer-feature/apm:": {},
     "ghcr.io/ministryofjustice/devcontainer-feature/astral:": {}
   },

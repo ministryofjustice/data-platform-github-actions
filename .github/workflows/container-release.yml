@@ -1,0 +1,105 @@
+---
+on:
+  workflow_call:
+    inputs:
+      build-context:
+        type: string
+        required: false
+        default: "."
+      clean-runner:
+        type: boolean
+        required: false
+        default: false
+      containerfile-path:
+        type: string
+        required: false
+        default: "Containerfile"
+
+permissions: {}
+
+jobs:
+  container-release:
+    name: Container Release
+    runs-on: ubuntu-24.04-arm
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+      packages: write
+    steps:
+      - name: Harden Runner
+        if: github.event.repository.private == false
+        id: harden_runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Clean Runner
+        if: inputs.clean-runner == true
+        id: clean_runner
+        uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
+        with:
+          confirm: true
+
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          persist-credentials: false
+
+      - name: Log in to GitHub Container Registry
+        id: login_ghcr
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push
+        id: build_and_push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        with:
+          context: ${{ inputs.build-context }} # zizmor: ignore[template-injection]
+          file: ${{ inputs.containerfile-path }}
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+
+      - name: Generate SBOM
+        id: generate_sbom
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
+        with:
+          image: ghcr.io/${{ github.repository }}@${{ steps.build_and_push.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cyclonedx.json
+          upload-artifact: false
+          upload-release-assets: false
+
+      - name: GitHub Build Provenance Attestation
+        id: attest_build_provenance
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build_and_push.outputs.digest }}
+          push-to-registry: true
+
+      - name: GitHub SBOM Attestation
+        id: attest_sbom
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-name: ghcr.io/${{ github.repository }}
+          subject-digest: ${{ steps.build_and_push.outputs.digest }}
+          sbom-path: sbom.cyclonedx.json
+          push-to-registry: true
+
+      - name: GitHub Attestation Verification
+        id: attest_verification
+        shell: bash
+        env:
+          DIGEST: ${{ steps.build_and_push.outputs.digest }}
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_REPOSITORY: ${{ github.repository }}
+        run: |
+          gh attestation verify \
+            "oci://ghcr.io/${IMAGE_REPOSITORY}@${DIGEST}" \
+            --repo "${IMAGE_REPOSITORY}" \
+            --signer-workflow ministryofjustice/data-platform-github-actions/.github/workflows/container-release.yml

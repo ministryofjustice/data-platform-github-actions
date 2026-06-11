@@ -4,11 +4,11 @@ Builds a container image, scans it with [anchore/scan-action](https://github.com
 
 ## Inputs
 
-|         Input          |   Type    | Required |     Default     |
-| :--------------------: | :-------: | :------: | :-------------: |
-|    `build-context`     | `string`  | `false`  |       `.`       |
-| `clean-actions-runner` | `boolean` | `false`  |     `false`     |
-|  `containerfile-path`  | `string`  | `false`  | `Containerfile` |
+|        Input         |   Type    | Required |     Default     |
+| :------------------: | :-------: | :------: | :-------------: |
+|   `build-context`    | `string`  | `false`  |       `.`       |
+|    `clean-runner`    | `boolean` | `false`  |     `false`     |
+| `containerfile-path` | `string`  | `false`  | `Containerfile` |
 
 ## Usage
 
@@ -31,7 +31,4 @@ jobs:
       pull-requests: write
       security-events: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/container-scan.yml@<commit SHA> # <version>
-    with:
-      build-context: .
-      containerfile-path: Containerfile
 ```
