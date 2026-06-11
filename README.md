@@ -16,6 +16,10 @@ This repository contains Data Platform's reusable workflows.
 
 See [`chart-lint`](/docs/usage/workflows/chart-lint.md)
 
+### Chart Release
+
+See [`chart-release`](/docs/usage/workflows/chart-release.md)
+
 ### CodeQL Analysis
 
 See [`codeql-analysis`](/docs/usage/workflows/codeql-analysis.md)
