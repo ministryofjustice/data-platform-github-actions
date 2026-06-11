@@ -71,6 +71,8 @@ jobs:
           image: ghcr.io/${{ github.repository }}@${{ steps.build_and_push.outputs.digest }}
           format: cyclonedx-json
           output-file: sbom.cyclonedx.json
+          upload-artifact: false
+          upload-release-assets: false
 
       - name: GitHub Build Provenance Attestation
         id: attest_build_provenance
