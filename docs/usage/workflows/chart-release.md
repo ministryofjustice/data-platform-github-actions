@@ -26,10 +26,8 @@ jobs:
     name: Chart Release
     permissions:
       attestations: write
-      contents: write
+      contents: read
       id-token: write
       packages: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/chart-release.yml@<commit SHA> # <version>
-    with:
-      chart-name: example-chart-name
 ```
