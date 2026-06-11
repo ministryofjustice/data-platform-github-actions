@@ -55,14 +55,15 @@ jobs:
           CHART_NAME=$(yq -r '.name' "${CHART_PATH}/Chart.yaml")
           CHART_VERSION=$(yq -r '.version' "${CHART_PATH}/Chart.yaml")
 
-          echo "CHART_NAME=${CHART_NAME}" >> "${GITHUB_ENV}"
-          echo "CHART_VERSION=${CHART_VERSION}" >> "${GITHUB_ENV}"
           echo "chart_name=${CHART_NAME}" >> "${GITHUB_OUTPUT}"
           echo "chart_version=${CHART_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Push Chart
         id: push_chart
         shell: bash
+        env:
+          CHART_NAME: ${{ steps.package_chart.outputs.chart_name }}
+          CHART_VERSION: ${{ steps.package_chart.outputs.chart_version }}
         run: |
           OUTPUT=$(helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/data-platform-charts)
           DIGEST=$(echo "${OUTPUT}" | grep -oP 'Digest: \K.*')
