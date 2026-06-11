@@ -4,10 +4,9 @@ Releases a Helm Chart to GitHub Container Registry
 
 ## Inputs
 
-|     Input     |   Type    | Required | Default |
-| :-----------: | :-------: | :------: | :-----: |
-| `chart-name`  | `string`  |  `true`  |         |
-| `chart-path`  | `string`  | `false`  | `chart` |
+|    Input     |   Type   | Required | Default |
+| :----------: | :------: | :------: | :-----: |
+| `chart-path` | `string` | `false`  | `chart` |
 
 ## Usage
 

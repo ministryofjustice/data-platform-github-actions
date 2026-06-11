@@ -2,9 +2,6 @@
 on:
   workflow_call:
     inputs:
-      chart-name:
-        type: string
-        required: true
       chart-path:
         type: string
         required: false
@@ -54,14 +51,18 @@ jobs:
           CHART_PATH: ${{ inputs.chart-path }}
         run: |
           helm package "${CHART_PATH}" --destination .helm-deploy
-          CHART_VERSION=$(grep -E '^version:' "${CHART_PATH}/Chart.yaml" | awk '{print $2}')
+
+          CHART_NAME=$(yq -r '.name' "${CHART_PATH}/Chart.yaml")
+          CHART_VERSION=$(yq -r '.version' "${CHART_PATH}/Chart.yaml")
+
+          echo "CHART_NAME=${CHART_NAME}" >> "${GITHUB_ENV}"
           echo "CHART_VERSION=${CHART_VERSION}" >> "${GITHUB_ENV}"
+          echo "chart_name=${CHART_NAME}" >> "${GITHUB_OUTPUT}"
+          echo "chart_version=${CHART_VERSION}" >> "${GITHUB_OUTPUT}"
 
       - name: Push Chart
         id: push_chart
         shell: bash
-        env:
-          CHART_NAME: ${{ inputs.chart-name }}
         run: |
           OUTPUT=$(helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/data-platform-charts)
           DIGEST=$(echo "${OUTPUT}" | grep -oP 'Digest: \K.*')
@@ -71,7 +72,7 @@ jobs:
         id: github_attestation
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
-          subject-name: ghcr.io/ministryofjustice/data-platform-charts/${{ inputs.chart-name }}
+          subject-name: ghcr.io/ministryofjustice/data-platform-charts/${{ steps.package_chart.outputs.chart_name }}
           subject-digest: ${{ steps.push_chart.outputs.digest }}
           push-to-registry: true
 
@@ -79,11 +80,12 @@ jobs:
         id: github_attestation_verification
         shell: bash
         env:
-          CHART_NAME: ${{ inputs.chart-name }}
+          CHART_NAME: ${{ steps.package_chart.outputs.chart_name }}
           GH_TOKEN: ${{ github.token }}
-          CHART_VERSION: ${{ env.CHART_VERSION }}
+          CHART_VERSION: ${{ steps.package_chart.outputs.chart_version }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           gh attestation verify \
             "oci://ghcr.io/ministryofjustice/data-platform-charts/${CHART_NAME}:${CHART_VERSION}" \
-            --repo ${{ github.repository }} \
+            --repo "${REPOSITORY}" \
             --signer-workflow ministryofjustice/data-platform-github-actions/.github/workflows/chart-release.yml
