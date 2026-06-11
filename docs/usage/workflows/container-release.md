@@ -4,11 +4,11 @@ Builds and pushes a container image to GitHub Container Registry, generates an S
 
 ## Inputs
 
-|         Input          |   Type    | Required |     Default     |
-| :--------------------: | :-------: | :------: | :-------------: |
-|    `build-context`     | `string`  | `false`  |       `.`       |
-| `clean-actions-runner` | `boolean` | `false`  |     `false`     |
-|  `containerfile-path`  | `string`  | `false`  | `Containerfile` |
+|        Input         |   Type    | Required |     Default     |
+| :------------------: | :-------: | :------: | :-------------: |
+|   `build-context`    | `string`  | `false`  |       `.`       |
+|    `clean-runner`    | `boolean` | `false`  |     `false`     |
+| `containerfile-path` | `string`  | `false`  | `Containerfile` |
 
 ## Usage
 

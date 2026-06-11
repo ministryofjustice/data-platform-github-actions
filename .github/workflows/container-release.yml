@@ -6,7 +6,7 @@ on:
         type: string
         required: false
         default: "."
-      clean-actions-runner:
+      clean-runner:
         type: boolean
         required: false
         default: false
@@ -34,9 +34,9 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: Clean Actions Runner
-        if: inputs.clean-actions-runner == true
-        id: clean_actions_runner
+      - name: Clean Runner
+        if: inputs.clean-runner == true
+        id: clean_runner
         uses: ministryofjustice/action-clean-runner@390530713a326ddc099b2114f38dd0f2f8eac6da # v1.1.0
         with:
           confirm: true
@@ -73,14 +73,14 @@ jobs:
           output-file: sbom.cyclonedx.json
 
       - name: GitHub Build Provenance Attestation
-        id: github_build_provenance_attestation
+        id: attest_build_provenance
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-name: ghcr.io/${{ github.repository }}
           subject-digest: ${{ steps.build_and_push.outputs.digest }}
           push-to-registry: true
 
-      - name: GitHub Attestation SBOM
+      - name: GitHub SBOM Attestation
         id: attest_sbom
         uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
         with:
@@ -90,7 +90,7 @@ jobs:
           push-to-registry: true
 
       - name: GitHub Attestation Verification
-        id: github_attestation_verification
+        id: attest_verification
         shell: bash
         env:
           DIGEST: ${{ steps.build_and_push.outputs.digest }}
