@@ -168,9 +168,10 @@ jobs:
                 echo "${SARIF}" | jq -r --argjson s "${RULE_SEVERITIES}" \
                   --argjson min "${min_score}" --argjson max "${max_score}" '
                   def advisory_line:
-                    (try (.ruleId | capture("^(?<id>CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+)") | .id) // .ruleId) as $id
+                    (try (.ruleId | capture("^(?<id>(CVE-[0-9]+-[0-9]+|GHSA-[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+|GO-[0-9]+-[0-9]+))(?:-.+)?$") | .id) // .ruleId) as $id
                     | (if ($id | startswith("CVE-")) then "https://nvd.nist.gov/vuln/detail/\($id)"
                       elif ($id | startswith("GHSA-")) then "https://github.com/advisories/\($id)"
+                      elif ($id | startswith("GO-")) then "https://pkg.go.dev/vuln/\($id)"
                       else "" end) as $url
                     | if $url != "" then "- [\($id)](\($url)) - \(.message.text)"
                       else "- \(.ruleId) - \(.message.text)"
