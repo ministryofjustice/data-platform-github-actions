@@ -32,6 +32,10 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set Up Crane
+        id: setup_crane
+        uses: ministryofjustice/action-setup-crane@b8d5be6affce54f6ff5f54e90174508bf4522672 # v1.0.0
+
       - name: Set Up Helm
         id: setup_helm
         uses: azure/setup-helm@dda3372f752e03dde6b3237bc9431cdc2f7a02a2 # v5.0.0
@@ -65,8 +69,9 @@ jobs:
           CHART_NAME: ${{ steps.package_chart.outputs.chart_name }}
           CHART_VERSION: ${{ steps.package_chart.outputs.chart_version }}
         run: |
-          OUTPUT=$(helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/data-platform-charts)
-          DIGEST=$(echo "${OUTPUT}" | sed -n 's/.*Digest: //p' | head -1)
+          helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/data-platform-charts
+
+          DIGEST=$(crane digest "ghcr.io/ministryofjustice/data-platform-charts/${CHART_NAME}:${CHART_VERSION}")
           echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
 
       - name: GitHub Build Provenance Attestation
