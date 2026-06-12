@@ -66,7 +66,7 @@ jobs:
           CHART_VERSION: ${{ steps.package_chart.outputs.chart_version }}
         run: |
           OUTPUT=$(helm push ".helm-deploy/${CHART_NAME}-${CHART_VERSION}.tgz" oci://ghcr.io/ministryofjustice/data-platform-charts)
-          DIGEST=$(echo "${OUTPUT}" | grep -oP 'Digest: \K.*')
+          DIGEST=$(echo "${OUTPUT}" | sed -n 's/^Digest: //p')
           echo "digest=${DIGEST}" >> "${GITHUB_OUTPUT}"
 
       - name: GitHub Build Provenance Attestation
@@ -84,7 +84,6 @@ jobs:
           CHART_NAME: ${{ steps.package_chart.outputs.chart_name }}
           GH_TOKEN: ${{ github.token }}
           CHART_VERSION: ${{ steps.package_chart.outputs.chart_version }}
-          REPOSITORY: ${{ github.repository }}
         run: |
           gh attestation verify \
             "oci://ghcr.io/ministryofjustice/data-platform-charts/${CHART_NAME}:${CHART_VERSION}" \
