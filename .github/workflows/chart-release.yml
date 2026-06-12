@@ -84,6 +84,7 @@ jobs:
           CHART_NAME: ${{ steps.package_chart.outputs.chart_name }}
           GH_TOKEN: ${{ github.token }}
           CHART_VERSION: ${{ steps.package_chart.outputs.chart_version }}
+          REPOSITORY: ${{ github.repository }}
         run: |
           gh attestation verify \
             "oci://ghcr.io/ministryofjustice/data-platform-charts/${CHART_NAME}:${CHART_VERSION}" \
