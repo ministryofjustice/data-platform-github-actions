@@ -55,24 +55,10 @@ jobs:
         env:
           CHART_PATH: ${{ inputs.chart-path }}
         run: |
-          set -euo pipefail
+          helm package "${CHART_PATH}" --destination .helm-deploy
 
           CHART_NAME=$(yq -r '.name' "${CHART_PATH}/Chart.yaml")
           CHART_VERSION=$(yq -r '.version' "${CHART_PATH}/Chart.yaml")
-
-          # If triggered by a tag, prefer the tag as the chart version.
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            TAG_VERSION="${GITHUB_REF_NAME#v}"
-
-            if [[ "${TAG_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$ ]]; then
-              CHART_VERSION="${TAG_VERSION}"
-              yq -i ".version = \"${CHART_VERSION}\"" "${CHART_PATH}/Chart.yaml"
-            else
-              echo "Tag '${GITHUB_REF_NAME}' is not a valid SemVer chart version; using Chart.yaml version '${CHART_VERSION}'."
-            fi
-          fi
-
-          helm package "${CHART_PATH}" --destination .helm-deploy
 
           echo "chart_name=${CHART_NAME}" >> "${GITHUB_OUTPUT}"
           echo "chart_version=${CHART_VERSION}" >> "${GITHUB_OUTPUT}"
