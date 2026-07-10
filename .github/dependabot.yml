@@ -24,6 +24,10 @@ updates:
         - "ministryofjustice/action*"
         - "ministryofjustice/data-platform-github-actions*"
     directory: "/"
+    groups:
+      codeql-actions:
+        patterns:
+          - "github/codeql-action/*"
     open-pull-requests-limit: 15
     schedule:
       interval: "daily"
