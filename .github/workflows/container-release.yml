@@ -67,7 +67,7 @@ jobs:
           build-args: |
             VERSION=${{ github.ref_name }}
             COMMIT_SHA=${{ github.sha }}
-            ${{ inputs.build-args }} # zizmor: ignore[template-injection]
+            ${{ inputs['build-args'] }}
           context: ${{ inputs.build-context }} # zizmor: ignore[template-injection]
           file: ${{ inputs.containerfile-path }}
           push: true
