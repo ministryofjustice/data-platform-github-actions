@@ -6,9 +6,21 @@ Builds and pushes a container image to GitHub Container Registry, generates an S
 
 |        Input         |   Type    | Required |     Default     |
 | :------------------: | :-------: | :------: | :-------------: |
+|     `build-args`     | `string`  | `false`  |       ``        |
 |   `build-context`    | `string`  | `false`  |       `.`       |
 |    `clean-runner`    | `boolean` | `false`  |     `false`     |
 | `containerfile-path` | `string`  | `false`  | `Containerfile` |
+
+`build-args` should be provided as newline-delimited `KEY=VALUE` entries.
+
+## Default Build Arguments
+
+This workflow always passes these build arguments to the container build:
+
+- `VERSION=${{ github.ref_name }}`
+- `COMMIT_SHA=${{ github.sha }}`
+
+If you provide `build-args`, they are appended after these defaults. This means you can override a default by setting the same key again.
 
 ## Usage
 
@@ -32,6 +44,10 @@ jobs:
       id-token: write
       packages: write
     uses: ministryofjustice/data-platform-github-actions/.github/workflows/container-release.yml@<commit SHA> # <version>
+    with:
+      build-args: |
+        APP_ENV=production
+        API_BASE_URL=https://example.service
 ```
 
 ## Verification
