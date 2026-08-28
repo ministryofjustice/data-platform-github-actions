@@ -24,6 +24,7 @@
     "sarif",
     "shellcheck",
     "startswith",
+    "strenv",
     "terrascan",
     "tfstate",
     "toolkits",
