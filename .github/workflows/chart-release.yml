@@ -41,6 +41,15 @@ jobs:
         id: setup_helm
         uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
 
+      - name: Update Chart Version
+        id: update_chart_version
+        shell: bash
+        env:
+          CHART_PATH: ${{ inputs.chart-path }}
+          CHART_VERSION: ${{ github.ref_name }}
+        run: |
+          yq -i ".version = strenv(CHART_VERSION) | .appVersion = strenv(CHART_VERSION)" "${CHART_PATH}/Chart.yaml"
+
       - name: Log in to GitHub Container Registry
         id: login_ghcr
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
