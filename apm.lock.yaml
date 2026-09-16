@@ -1,9 +1,9 @@
 lockfile_version: '1'
-generated_at: '2026-08-12T12:05:29.778492+00:00'
+generated_at: '2026-09-16T16:26:50.035539+00:00'
 apm_version: 0.28.0
 dependencies:
 - repo_url: ministryofjustice/ai-toolkit
-  name: universal-toolkit
+  name: universal
   host: github.com
   resolved_commit: e9176f7a67cbef3761a4e82182c6a3c309e9154b
   resolved_ref: main
@@ -11,41 +11,8 @@ dependencies:
   virtual_path: toolkits/universal
   is_virtual: true
   package_type: apm_package
-  deployed_files:
-  - .github/instructions/language.instructions.md
-  - .github/instructions/ministryofjustice.instructions.md
-  deployed_file_hashes:
-    .github/instructions/language.instructions.md: sha256:70e9d0f220f2ceec1cf5b8088c9e199259670f9baa383b330ff3ba9e4107e655
-    .github/instructions/ministryofjustice.instructions.md: sha256:470dc2fbec601f32b14b73f6665a17dd7e3427c0bcdc5c8197c5e3905d30dfcc
-  content_hash: sha256:807f74b1c1f7679b032627bec83bb5095656444b1575bca03875aae8d2327754
-deployments:
-- kind: project-relative
-  target: copilot
-  value: .github/instructions/language.instructions.md
-  runtime: null
-  scope: project
-  owners:
-  - ministryofjustice/ai-toolkit/toolkits/universal
-  active_owner: ministryofjustice/ai-toolkit/toolkits/universal
-  content_hash: sha256:70e9d0f220f2ceec1cf5b8088c9e199259670f9baa383b330ff3ba9e4107e655
-- kind: project-relative
-  target: copilot
-  value: .github/instructions/ministryofjustice.instructions.md
-  runtime: null
-  scope: project
-  owners:
-  - ministryofjustice/ai-toolkit/toolkits/universal
-  active_owner: ministryofjustice/ai-toolkit/toolkits/universal
-  content_hash: sha256:470dc2fbec601f32b14b73f6665a17dd7e3427c0bcdc5c8197c5e3905d30dfcc
-- kind: uri
-  target: mcp
-  value: github
-  runtime: vscode
-  scope: project
-  owners:
-  - .
-  active_owner: .
-  content_hash: null
+  content_hash: sha256:f503de05a01685575188eee0610cafd4ac2ed0688bf4848d16f5f5e0c41ab435
+deployments: []
 mcp_servers:
 - github
 mcp_configs:
@@ -54,8 +21,5 @@ mcp_configs:
     transport: http
     registry: false
     url: https://api.githubcopilot.com/mcp/
-mcp_target_servers:
-  vscode:
-  - github
 mcp_config_provenance:
-  github: universal-toolkit
+  github: universal
