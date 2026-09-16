@@ -2,10 +2,10 @@ lockfile_version: '1'
 generated_at: '2026-08-12T12:05:29.778492+00:00'
 apm_version: 0.28.0
 dependencies:
-- repo_url: ministryofjustice/data-platform-ai-toolkit
+- repo_url: ministryofjustice/ai-toolkit
   name: universal-toolkit
   host: github.com
-  resolved_commit: 125aa26d61e0920fb85af26131da7832d8e5467c
+  resolved_commit: e9176f7a67cbef3761a4e82182c6a3c309e9154b
   resolved_ref: main
   version: 1.0.0
   virtual_path: toolkits/universal
@@ -25,8 +25,8 @@ deployments:
   runtime: null
   scope: project
   owners:
-  - ministryofjustice/data-platform-ai-toolkit/toolkits/universal
-  active_owner: ministryofjustice/data-platform-ai-toolkit/toolkits/universal
+  - ministryofjustice/ai-toolkit/toolkits/universal
+  active_owner: ministryofjustice/ai-toolkit/toolkits/universal
   content_hash: sha256:70e9d0f220f2ceec1cf5b8088c9e199259670f9baa383b330ff3ba9e4107e655
 - kind: project-relative
   target: copilot
@@ -34,8 +34,8 @@ deployments:
   runtime: null
   scope: project
   owners:
-  - ministryofjustice/data-platform-ai-toolkit/toolkits/universal
-  active_owner: ministryofjustice/data-platform-ai-toolkit/toolkits/universal
+  - ministryofjustice/ai-toolkit/toolkits/universal
+  active_owner: ministryofjustice/ai-toolkit/toolkits/universal
   content_hash: sha256:470dc2fbec601f32b14b73f6665a17dd7e3427c0bcdc5c8197c5e3905d30dfcc
 - kind: uri
   target: mcp
