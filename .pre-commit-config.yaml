@@ -22,5 +22,5 @@ repos:
 exclude: |
   (?x)^(
     \.devcontainer/devcontainer-lock\.json|
-    \.github/mcp\.json
+    (.*/)?mcp\.json
   )$
