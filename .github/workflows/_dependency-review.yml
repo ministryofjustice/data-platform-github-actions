@@ -14,4 +14,4 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    uses: ./.github/workflows/dependency-review.yml
+    uses: $/.github/workflows/dependency-review.yml

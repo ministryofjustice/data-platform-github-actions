@@ -17,4 +17,4 @@ jobs:
       contents: read
       id-token: write
       security-events: write
-    uses: ./.github/workflows/openssf-scorecard.yml
+    uses: $/.github/workflows/openssf-scorecard.yml

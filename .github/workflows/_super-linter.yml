@@ -15,10 +15,11 @@ jobs:
       contents: read
       packages: read
       statuses: write
-    uses: ./.github/workflows/super-linter.yml
+    uses: $/.github/workflows/super-linter.yml
     with:
       # JSCPD is disabled as it detects duplication of Harden Runner + Checkout, but these are curated reusable workflows, so cannot reference each other
       super-linter-variables: |
         {
-          "VALIDATE_JSCPD": false
+          "VALIDATE_JSCPD": false,
+          "FILTER_REGEX_EXCLUDE": "(^|/)mcp\\.json$"
         }

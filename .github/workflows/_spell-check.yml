@@ -13,4 +13,4 @@ jobs:
     name: Spell Check
     permissions:
       contents: read
-    uses: ./.github/workflows/spell-check.yml
+    uses: $/.github/workflows/spell-check.yml

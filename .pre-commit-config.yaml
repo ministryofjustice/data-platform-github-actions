@@ -19,4 +19,8 @@ repos:
     hooks:
       - id: zizmor
 
-exclude: .devcontainer/devcontainer-lock.json
+exclude: |
+  (?x)^(
+    \.devcontainer/devcontainer-lock\.json|
+    (.*/)?mcp\.json
+  )$
